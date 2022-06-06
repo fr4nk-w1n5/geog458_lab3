@@ -44,15 +44,15 @@ map.on('load', function loadingData() {
 
     // add layer
     // add legend
-    map.addSource('covidrates', { 
+    map.addSource('CovidRates2020', { 
         type: 'geojson',
         data: 'assets/us-covid-2020-rates-final.json' // 
     });
 
     map.addLayer({
-        'id': 'covidrates',
+        'id': 'CovidRates2020',
         'type': 'fill',
-        'source': 'covidrates',
+        'source': 'CovidRates2020',
         'paint': {
             'fill-color': [
                 'step',
@@ -100,7 +100,7 @@ map.on('load', function loadingData() {
         point
     }) => {
         const state = map.queryRenderedFeatures(point, {
-            layers: ['covidrates']
+            layers: ['CovidRates2020']
         });
         document.getElementById('text-description').innerHTML = state.length ?
             `<h3>${state[0].properties.county}</h3><p><strong><em>${state[0].properties.state}</strong> people per square mile</em></p>` :
