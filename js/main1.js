@@ -1,58 +1,23 @@
-mapboxgl.accessToken =
-            'pk.eyJ1IjoiamFrb2J6aGFvIiwiYSI6ImNpcms2YWsyMzAwMmtmbG5icTFxZ3ZkdncifQ.P9MBej1xacybKcDN_jehvw';
+mapboxgl.accessToken = 'pk.eyJ1IjoiamFrb2J6aGFvIiwiYSI6ImNpcms2YWsyMzAwMmtmbG5icTFxZ3ZkdncifQ.P9MBej1xacybKcDN_jehvw';
 
-const map = new mapboxgl.Map({
-    container: 'map', // container ID
-    style: 'mapbox://styles/mapbox/light-v10', // style URL
-    zoom: 3.8, // starting zoom
-    projection: 'albers',
-    center: [-100, 40] // starting center
+//create map
+var map = new mapboxgl.Map({
+container: 'map', // container id
+style: 'mapbox://styles/mapbox/dark-v10' // map style URL from Mapbox Studio
 });
 
+// wait for map to load before adjusting it
+map.on('load', () => {
 
-async function geojsonFetch() {
-
-    let response = await fetch('assets/us-covid-2020-rates-final.json');
-    //let response
-    let stateData = await response.json();
-    // other operations
-};
-
-
-map.on('load', function loadingData() {
-    // Insert const stuff here for legend
-    const layers = [ // TODO: layer and coolors need to change
-        '0-5',
-        '6-19',
-        '20-39',
-        '39-49',
-        '50-99',
-        '100-149',
-        '150 and more'
-    ];
-
-    const colors = [
-        '#FFEDA070',
-        '#FED97670',
-        '#FEB24C70',
-        '#FD8D3C70',
-        '#FC4E2A70',
-        '#E31A1C70',
-        '#BD002670',
-        '#80002670'
-    ];
-
-    // add layer
-    // add legend
-    map.addSource('CovidRates2020', { 
+map.addSource('cases', {
         type: 'geojson',
-        data: 'assets/us-covid-2020-rates-final.json' // 
+        data: 'assets/us-covid-2020-rates.json'
     });
 
     map.addLayer({
-        'id': 'CovidRates2020',
+        'id': 'rates',
         'type': 'fill',
-        'source': 'CovidRates2020',
+        'source': 'cases',
         'paint': {
             'fill-color': [
                 'step',
@@ -79,37 +44,80 @@ map.on('load', function loadingData() {
 
     });
 
-    const legend = document.getElementById('legend');
-    legend.innerHTML = "<br><b>Covid Rates</b><br>";
+// set map bounds to the continental US
+map.fitBounds([
+    [-133.2421875, 16.972741],
+    [-47.63671875, 52.696361]
+]);
 
-    layers.forEach((layer, i) => {
-        const color = colors[i];
-        const item = document.createElement('div');
-        const key = document.createElement('span');
-        key.className = 'legend-key';
-        key.style.backgroundColor = color;
+// make a pointer cursor
+map.getCanvas().style.cursor = 'default';
 
-        const value = document.createElement('span');
-        value.innerHTML = `${layer}`;
-        item.appendChild(key);
-        item.appendChild(value);
-        legend.appendChild(item);
+// define layer names
+var layers = [
+    '0-10',
+    '10-20',
+    '20-50',
+    '50-100',
+    '100-200',
+    '200-500',
+    '500-1000',
+    '1000+'
+];
+var colors = [
+    '#FFEDA0',
+    '#FED976',
+    '#FEB24C',
+    '#FD8D3C',
+    '#FC4E2A',
+    '#E31A1C',
+    '#BD0026',
+    '#800026'
+];
+
+// create legend
+for (i = 0; i < layers.length; i++) {
+    var layer = layers[i];
+    var color = colors[i];
+    var item = document.createElement('div');
+    var key = document.createElement('span');
+    key.className = 'legend-key';
+    key.style.backgroundColor = color;
+
+    var value = document.createElement('span');
+    value.innerHTML = layer;
+    item.appendChild(key);
+    item.appendChild(value);
+    legend.appendChild(item);
+}
+
+// change info window on hover
+map.on('mousemove', (e) => {
+    const features = map.queryRenderedFeatures(e.point);
+    
+    // Limit the number of properties we're displaying for
+    // legibility and performance
+    const displayProperties = [
+        'county',
+        'pop18',
+        'cases',
+        'deaths',
+        'rates'
+    ];
+    
+    const displayFeatures = features.map((feat) => {
+    const displayFeat = {};
+    displayProperties.forEach((prop) => {
+    displayFeat[prop] = feat[prop];
     });
-
-    map.on('mousemove', ({
-        point
-    }) => {
-        const state = map.queryRenderedFeatures(point, {
-            layers: ['CovidRates2020']
-        });
-        document.getElementById('text-description').innerHTML = state.length ?
-            `<h3>${state[0].properties.county}</h3><p><strong><em>${state[0].properties.state}</strong> people per square mile</em></p>` :
-            `<p>Hover over a state!</p>`;
+    return displayFeat;
     });
-
+    
+    // Write object as string with an indent of two spaces.
+    document.getElementById('features').innerHTML = JSON.stringify(
+    displayFeatures,
+    null,
+    2
+    );
 });
-const source =
-    '<p style="text-align: right; font-size:10pt">Source: <a href="https://data.census.gov/cedsci/table?g=0100000US%24050000&d=ACS%205-Year%20Estimates%20Data%20Profiles&tid=ACSDP5Y2018.DP05&hidePreview=true">USGS</a></p>';
-// combine all the html codes.
-legend.innerHTML = labels.join('') + source;
-geojsonFetch();
+});
